@@ -68,4 +68,20 @@ ZCode 也可以通过 `$create-lethink-dynamic-component` 指定技能，再填�
 
 ## 更新
 
-需要获取新版技能时，重新执行安装时使用的命令，按提示更新。保持相同的 `--agent` 和安装范围；如果安装在项目内，请回到原项目目录执行。更新后刷新编程助手中的技能列表。
+批量更新已安装的技能：
+
+```bash
+npx skills@latest update
+```
+
+按提示选择用户级或项目级安装范围。该命令会更新所选范围内的全部技能，包括从其他仓库安装的技能。
+
+如果只想更新本仓库的动态组件技能，以用户级安装为例：
+
+```bash
+npx skills@latest update create-lethink-dynamic-component --global
+```
+
+如果当初安装在项目内，请先进入该项目目录，将 `--global` 改为 `--project` 再执行。
+
+更新后刷新编程助手中的技能列表。更多选项参见 [skills 更新命令说明](https://github.com/vercel-labs/skills#skills-update)。
