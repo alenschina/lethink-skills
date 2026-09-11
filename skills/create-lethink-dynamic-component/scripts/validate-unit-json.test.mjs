@@ -131,7 +131,71 @@ test("冲突的 filter_logic 和实例数据源覆盖给出提示", () => {
   assert.ok(result.warnings.some(message => message.includes("data_source.params.keyword")));
 });
 
+const aliasConfig = '{"list":{"path":"article_list","field":"items","params":{"category_id":"{{$Var@news_category_id}}"}}}';
+function aliasFields(params = {}) {
+  const scoped = new Map(fields);
+  scoped.delete("category_id");
+  scoped.set("news_category_id", { field: "news_category_id", default: 12 });
+  scoped.set("data_source", { field: "data_source", default: { ...fields.get("data_source").default, params } });
+  return scoped;
+}
+const lossWarnings = result => result.warnings.filter(message => message.includes("可能在参数覆盖后丢失"));
+
+test("变量已正确替换，但别名字段不能回填被覆盖的 category_id", () => {
+  const result = inspectDynamicHtml(markup(aliasConfig), aliasFields());
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.configs[0].list.params.category_id, "12");
+  assert.equal(lossWarnings(result).length, 1);
+  assert.match(lossWarnings(result)[0], /category_id/);
+});
+
+test("同名顶层字段允许回填，不报告参数丢失", () => {
+  const scoped = aliasFields();
+  scoped.set("category_id", { field: "category_id", default: 12 });
+  assert.deepEqual(lossWarnings(inspectDynamicHtml(markup(aliasConfig), scoped)), []);
+});
+
+test("数据源已经声明 category_id 时不报告缺键，即使值为空", () => {
+  for (const categoryId of ["12", "", null]) {
+    const result = inspectDynamicHtml(markup(aliasConfig), aliasFields({ category_id: categoryId }));
+    assert.deepEqual(lossWarnings(result), []);
+  }
+});
+
+test("没有 data_source.params 时不推断会整体覆盖", () => {
+  const scoped = aliasFields();
+  delete scoped.get("data_source").default.params;
+  assert.deepEqual(lossWarnings(inspectDynamicHtml(markup(aliasConfig), scoped)), []);
+});
+
+test("PHP 接受空数组 params，它也会清除 HTML 原参数", () => {
+  assert.equal(lossWarnings(inspectDynamicHtml(markup(aliasConfig), aliasFields([]))).length, 1);
+});
+
+test("警告限于页面服务实际选择的主数据段", () => {
+  const raw = '{"list":{"path":"article_list","params":{}},"category":{"path":"article_category_list","params":{"parent_id":12}}}';
+  assert.deepEqual(lossWarnings(inspectDynamicHtml(markup(raw), aliasFields())), []);
+  for (const section of ["fanout", "category"]) {
+    const source = JSON.stringify({ [section]: { path: "example_list", params: { category_id: 12 } } });
+    assert.equal(lossWarnings(inspectDynamicHtml(markup(source), aliasFields())).length, 1);
+  }
+});
+
 const cli = fileURLToPath(new URL("./validate-unit-json.mjs", import.meta.url));
+test("实际 CLI 将参数丢失风险输出为警告，不误报 JSON 错误", () => {
+  const folder = mkdtempSync(join(tmpdir(), "lethink-validator-alias-"));
+  try {
+    const unit = join(folder, "component.json"), html = join(folder, "component.html");
+    writeFileSync(unit, JSON.stringify([...aliasFields().values()]));
+    writeFileSync(html, markup(aliasConfig));
+    const result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /category_id.*可能在参数覆盖后丢失/);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
 test("实际 CLI 对漏逗号返回失败退出码，修复后成功", () => {
   const folder = mkdtempSync(join(tmpdir(), "lethink-validator-test-"));
   try {

@@ -100,6 +100,8 @@ export function inspectDynamicHtml(html, fields) {
       return;
     }
     configs.push(parsed);
+    // 与 PageService 一致：实例数据源只覆盖首个主数据段，不覆盖列表旁的分类段。
+    const runtimeSection = ["list", "fanout", "category"].find(section => isObject(parsed[section]));
     for (const section of ["list", "category", "detail", "fanout"]) {
       const part = parsed[section];
       if (part === undefined) continue;
@@ -115,10 +117,12 @@ export function inspectDynamicHtml(html, fields) {
         notes.push("当前运行时使用根节点 data-lethink-enable-pagination 控制分页，不以 pagination.enabled 作为开关");
       }
       const sourceParams = fields.get("data_source")?.default?.params;
-      if (section === "list" && isObject(sourceParams) && isObject(part.params)) {
+      if (section === runtimeSection && (isObject(sourceParams) || Array.isArray(sourceParams)) && isObject(part.params)) {
         for (const [key, value] of Object.entries(part.params)) {
-          if (Object.prototype.hasOwnProperty.call(sourceParams, key) && !fields.has(key)
-            && JSON.stringify(sourceParams[key]) !== JSON.stringify(value)) {
+          if (fields.has(key)) continue;
+          if (!Object.prototype.hasOwnProperty.call(sourceParams, key)) {
+            warnings.push(`${label}.${section}.params.${key} 可能在参数覆盖后丢失：data_source.params 未声明该参数，且没有同名顶层字段可回填；变量替换成功不代表合并后仍保留，请核对最终指令及请求`);
+          } else if (JSON.stringify(sourceParams[key]) !== JSON.stringify(value)) {
             warnings.push(`${label}: HTML 与 data_source.params.${key} 不一致，实例数据源可能覆盖 HTML，请核对最终请求`);
           }
         }
