@@ -40,6 +40,7 @@
 当前浏览器控件契约：
 
 - 根节点 `data-lethink-page-size` 提供页大小，`data-lethink-enable-pagination="1"` 启用分页；`pagination.enabled` 不是当前浏览器开关。
+- 在组件内、列表重复项之外保留 `<div class="page" data-lethink-pagination></div>`，供运行时生成分页控件；完整配合配置及验收见 [分页容器](dynamic-request-contract.md#分页容器)。
 - `list.search` 指向组件内搜索表单；由通用运行时发起查询，避免自写另一套 fetch。
 - 日期控件使用 `.year-select` / `.month-select` / `.day-select`，含 `p`、隐藏 input、`ul`。核对既有脚本与运行时谁负责填充选项、谁绑定事件，避免重复接管同一控件；不额外编写交互脚本。
 - 当前运行时默认年份范围为当年及前七年，不能假定涵盖所有历史文章。日期应覆盖闰年和更改年份/月后下级条件清空。

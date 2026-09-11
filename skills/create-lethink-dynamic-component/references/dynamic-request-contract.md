@@ -27,6 +27,22 @@
 
 业务条件集中放在 `params` 通常更易读，但不能把 `limit`、`filter_logic` 的外层写法误判为错误，也不能把 `mapping`、`search` 等控制项都塞进 `params`。同一条件尽量只声明一次，避免意外覆盖。
 
+## 分页容器
+
+需要分页时，在带有 `data-lethink-dynamic` 的组件根节点内部、列表重复项之外放置分页容器：
+
+```html
+<div class="page" data-lethink-pagination></div>
+```
+
+`data-lethink-pagination` 标记运行时渲染分页控件的位置；`class="page"` 沿用既有分页样式。关键是属性，不要求必须使用 `div`，已有 `nav` 容器也可以保留。不要在容器内写死页码，也不需要另写分页 CSS 或点击脚本。
+
+配合配置：组件根节点使用 `data-lethink-enable-pagination="1"`，并在指令的 `list` 下配置 `"pagination": {"pages_path": "data.pagination.pages"}`。每页条数和请求参数名由 `data-lethink-page-size` / `list.limit`、`list.page_param`、`list.limit_param` 控制；`pages_path` 按真实响应调整。
+
+标签提供分页控件的挂载位置，数据分页仍由接口完成。运行时根据接口总页数生成上一页、页码和下一页；点击后携带目标页码重新查询列表。当前实现中，总页数不大于 1 时清空分页容器，因此没有显示页码不一定是标签失效。
+
+验收时分别检查容器位于当前组件内、最终 `list.pagination` 存在且分页未关闭、响应总页数正确，以及点击后请求的页码和列表内容确实变化。
+
 ## 固定分类与分类切换
 
 固定查询某类文章：
@@ -75,7 +91,7 @@ HTML 改了但请求没变时，应检查旧页面实例配置。`unit_json.data
 
 在用户实际应用项目中搜索这些文件和函数，不依赖个人电脑的绝对目录：
 
-- 前端 `src/utils/lethink-dynamic-runtime.js`：`parseDynamicConfig`、`resolveSiteId`、`RT.boot`、`RT.initInstance`、`loadList`、`execute`。
+- 前端 `src/utils/lethink-dynamic-runtime.js`：`parseDynamicConfig`、`resolveSiteId`、`RT.boot`、`RT.initInstance`、`loadList`、`execute`；分页见 `renderPagination`、`bindListExtras`。
 - 后端 `app/service/template/PageService.php`：`mergeDynamicRuntimeDataSourceFromProps`、`mergeDynamicRuntimeInstanceContext`。
 - 后端 `app/service/api/ApiService.php`：接口分派、请求过滤和分页实现。
 
