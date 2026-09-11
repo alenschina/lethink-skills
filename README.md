@@ -6,7 +6,7 @@
 
 | 技能 | 用途 |
 | --- | --- |
-| [create-lethink-dynamic-component](skills/create-lethink-dynamic-component/SKILL.md) | 根据业务数据结构编写 `unit_json` 和动态 HTML，选择数据接口，并排查内容管理入口、分类树、站点数据和链接问题 |
+| [create-lethink-dynamic-component](skills/create-lethink-dynamic-component/SKILL.md) | 基于静态 HTML 或业务需求创建动态组件，编写 `unit_json`、分类及筛选配置，并排查请求、字段绑定、内容入口和链接问题 |
 
 ## 安装
 
@@ -45,6 +45,8 @@ npx skills@latest add git@github.com:alenschina/lethink-skills.git --skill creat
 1. 在编程助手中打开实际的 Lethink 应用项目，让它能够读取相关前后端代码。
 2. 刷新并启用已安装的技能。ZCode 的入口为“设置 → 技能”；其他平台按各自的技能管理方式操作。
 3. 在对话中指定技能名称，并描述组件布局、业务字段和数据用途。
+
+如果已有原始静态 HTML markup，可以同时提供代码、附件或文件路径；技能会优先沿用现有结构完成动态化。未提供时，编程助手会询问是否有现成 markup；没有也可以直接根据需求创建。关联的 CSS、JS 和页面截图可一并提供。
 
 例如：
 

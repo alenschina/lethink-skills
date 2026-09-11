@@ -2,6 +2,7 @@
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { inspectDynamicHtml } from "./validate-dynamic-html.mjs";
 
 const unitPath = process.argv[2];
 const htmlPath = process.argv[3];
@@ -147,11 +148,16 @@ if (htmlPath) {
     errors.push(`无法读取 HTML: ${error.message}`);
   }
 
-  if (html && !html.includes("data-lethink-dynamic")) errors.push("HTML 缺少 data-lethink-dynamic");
-  if (html && itemFieldName && !html.includes(`data-component-items="${itemFieldName}"`)) {
+  const inspection = inspectDynamicHtml(html, fieldMap);
+  errors.push(...inspection.errors);
+  warnings.push(...inspection.warnings);
+  notes.push(...inspection.notes);
+  if (html && itemFieldName && !inspection.itemFields.includes(itemFieldName)) {
     errors.push(`HTML 缺少 data-component-items="${itemFieldName}"`);
   }
-  if (html && itemFieldName && !html.includes(`"field": "${itemFieldName}"`)) {
+  if (html && itemFieldName && inspection.configs.length && !inspection.configs.some(config =>
+    [config.list, config.category, config.detail, config.fanout].some(part => part?.field === itemFieldName)
+  )) {
     warnings.push(`HTML 动态指令中没有发现 field: ${itemFieldName}`);
   }
   if (html && dataSource?.detail_link_field) {

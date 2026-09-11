@@ -1,0 +1,82 @@
+<div
+  class="com-temp notice1779332990-temp lethink-news-list"
+  role="region"
+  aria-label="公示信息列表"
+  data-lethink-page-size="{{$Var@page_size}}"
+  data-lethink-enable-pagination="1"
+  data-lethink-dynamic='{
+    "execute_path": "/cmsapi/api.api/execute",
+    "empty_text": "暂无符合条件的公示信息",
+    "list": {
+      "path": "article_list",
+      "list_path": "data.list",
+      "field": "items",
+      "params": {
+        "category_id": "{{$Var@category_id}}",
+        "filter_logic": "and"
+      },
+      "limit": 9,
+      "page_param": "page",
+      "limit_param": "limit",
+      "keyword_param": "keyword",
+      "year_param": "year",
+      "month_param": "month",
+      "day_param": "day",
+      "search": ".lethink-news-list__search",
+      "pagination": {"pages_path": "data.pagination.pages"},
+      "detail_url": "{{$Var@detail_url}}",
+      "detail_id_key": "id",
+      "detail_id_param": "id",
+      "detail_link_field": "link",
+      "mapping": {"id": "id", "title": "title", "summary": "summary", "date": "publish_time", "link": "link"},
+      "allow_default_fallback": false
+    }
+  }'
+>
+  <div class="top lethink-news-list__toolbar">
+    <div class="container lethink-news-list__toolbar-inner">
+      <div class="left lethink-news-list__dates" role="group" aria-label="按发布日期筛选">
+        <div class="select lethink-news-list__select year-select">
+          <p class="ft14" role="button" tabindex="0" aria-label="选择年份" aria-expanded="false">全部年份</p>
+          <input type="hidden" name="year" value="">
+          <ul aria-label="年份选项"></ul>
+        </div>
+        <div class="select lethink-news-list__select month-select">
+          <p class="ft14" role="button" tabindex="0" aria-label="选择月份" aria-expanded="false">全部月份</p>
+          <input type="hidden" name="month" value="">
+          <ul aria-label="月份选项"></ul>
+        </div>
+        <div class="select lethink-news-list__select day-select">
+          <p class="ft14" role="button" tabindex="0" aria-label="选择日期" aria-expanded="false">全部日期</p>
+          <input type="hidden" name="day" value="">
+          <ul aria-label="日期选项"></ul>
+        </div>
+      </div>
+      <div class="right">
+      <form class="form lethink-news-list__search" role="search" aria-label="搜索公示信息">
+        <input class="text ft14" type="text" name="keyword" aria-label="公示关键词" placeholder="请输入关键字搜索…" autocomplete="off">
+        <button class="btn" type="submit" aria-label="搜索">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5"></circle>
+            <path d="m15.5 15.5 4.5 4.5"></path>
+          </svg>
+        </button>
+      </form>
+      </div>
+    </div>
+  </div>
+  <div class="main lethink-news-list__body">
+    <div class="container lethink-news-list__content">
+      <p class="lethink-news-list__loading" data-component-loading="items" role="status" hidden>正在加载公示信息…</p>
+      <div class="notice-list lethink-news-list__grid" data-component-items="items" aria-live="polite">
+        <a class="item lethink-news-list__card lethink-news-list__link" href="{{link}}" data-component-item>
+          <h2 class="name ft22 lethink-news-list__title">{{title}}</h2>
+          <p class="txt ft16 lineTwo lethink-news-list__summary">{{summary}}</p>
+          <time class="time ft15 lethink-news-list__date" datetime="{{date}}">{{date}}</time>
+        </a>
+      </div>
+      <p class="lethink-news-list__empty" data-component-empty="items" role="status" hidden>暂无符合条件的公示信息</p>
+      <nav class="page lethink-news-list__pagination" data-lethink-pagination aria-label="公示信息分页"></nav>
+    </div>
+  </div>
+</div>
