@@ -1,0 +1,4 @@
+interface:
+  display_name: "创建 Lethink 动态组件"
+  short_description: "编写并校验 unit_json、动态指令和内容管理配置"
+  default_prompt: "使用 $create-lethink-dynamic-component 根据业务数据结构创建一个可在 Lethink CMS 中使用的动态组件。"

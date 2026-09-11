@@ -1,0 +1,109 @@
+[
+  {
+    "field": "component_meta",
+    "label": "组件元信息",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "runtime_type": "dynamic",
+      "activation_mode": "page_mount",
+      "content_module": "product",
+      "content_schema_key": "product",
+      "data_field": "categories",
+      "table_scope": "shared",
+      "execute_path": "/cmsapi/api.api/execute",
+      "api_path": "product_category_list",
+      "generate_menu": true,
+      "generates_content_menu": true,
+      "reuse_content_management": true,
+      "right_panel_mode": "site_guide",
+      "content_menu_mode": "site_guide",
+      "backend_menu_mode": "site_guide",
+      "content_entry_mode": "site_guide",
+      "content_path": "content/product",
+      "content_edit_module": "product_category",
+      "content_entry_module": "product_category"
+    }
+  },
+  {
+    "field": "data_source",
+    "label": "数据源设置",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "mode": "dynamic",
+      "source_type": "api",
+      "bind_mode": "existing_api",
+      "content_module": "product",
+      "content_schema_key": "product",
+      "execute_path": "/cmsapi/api.api/execute",
+      "method": "GET",
+      "path": "product_category_list",
+      "api_path": "product_category_list",
+      "list_path": "data.list",
+      "item_field": "categories",
+      "list_target": "categories",
+      "data_field": "categories",
+      "params": {},
+      "detail_url": "/products/product-list",
+      "detail_id_key": "id",
+      "detail_id_param": "category_id",
+      "detail_link_field": "link",
+      "mapping": {
+        "id": "id",
+        "parent_id": "parent_id",
+        "name": "name",
+        "description": "description",
+        "image": "image",
+        "link": "link"
+      },
+      "static_fallback": true,
+      "generate_menu": true,
+      "generates_content_menu": true,
+      "reuse_content_management": true,
+      "right_panel_mode": "site_guide",
+      "content_menu_mode": "site_guide",
+      "backend_menu_mode": "site_guide",
+      "content_entry_mode": "site_guide",
+      "content_path": "content/product",
+      "content_edit_module": "product_category",
+      "content_entry_module": "product_category"
+    }
+  },
+  {
+    "field": "categories",
+    "label": "产品分类预览数据",
+    "type": "array",
+    "edit_type": "repeat_group",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "remark": "仅供组件库和搭建画布预览。正式数据在产品分类管理中维护。",
+    "default": [
+      {
+        "id": 1001,
+        "parent_id": 0,
+        "name": "传统户用",
+        "description": "一级分类说明文案",
+        "image": "",
+        "sort": 200,
+        "status": 1
+      },
+      {
+        "id": 1101,
+        "parent_id": 1001,
+        "name": "高效光伏组件",
+        "description": "",
+        "image": "",
+        "sort": 100,
+        "status": 1
+      }
+    ]
+  }
+]

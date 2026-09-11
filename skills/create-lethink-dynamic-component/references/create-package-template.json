@@ -1,0 +1,90 @@
+[
+  {
+    "field": "section_title",
+    "label": "区块标题",
+    "type": "string",
+    "edit_type": "input",
+    "can_edit": 1,
+    "show_in_panel": 1,
+    "default": "企业荣誉"
+  },
+  {
+    "field": "component_meta",
+    "label": "组件元信息",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "runtime_type": "dynamic",
+      "activation_mode": "page_mount"
+    }
+  },
+  {
+    "field": "data_source",
+    "label": "数据与建模设置",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "mode": "dynamic",
+      "source_type": "api",
+      "bind_mode": "create_package",
+      "generate_menu": true,
+      "item_field": "items",
+      "list_path": "data.list",
+      "seed_runtime_default": false,
+      "runtime_schema": {
+        "allowed_fields": ["title", "award_year", "summary", "image"],
+        "include_section_title": false,
+        "views": {
+          "list": ["title", "award_year", "image", "sort", "status"],
+          "form": ["title", "award_year", "summary", "image", "sort", "status"],
+          "search": ["title", "award_year", "status"]
+        },
+        "sorts": {
+          "title": 10,
+          "award_year": 20,
+          "summary": 30,
+          "image": 40,
+          "sort": 900,
+          "status": 910
+        }
+      }
+    }
+  },
+  {
+    "field": "items",
+    "label": "建模样本与组件预览",
+    "type": "array",
+    "edit_type": "repeat_group",
+    "can_edit": 1,
+    "show_in_panel": 1,
+    "remark": "默认值只用于字段识别和预览，正式内容在页面对应的内容入口维护。",
+    "default": [
+      {
+        "title": "年度创新奖",
+        "award_year": 2026,
+        "summary": "预览说明",
+        "image": ""
+      }
+    ],
+    "item_schema": {
+      "title": {"label": "荣誉名称", "type": "varchar"},
+      "award_year": {"label": "获奖年份", "type": "int"},
+      "summary": {"label": "荣誉说明", "type": "text"},
+      "image": {"label": "荣誉图片", "type": "varchar"}
+    },
+    "schema": {
+      "fields": [
+        {"field": "title", "label": "荣誉名称", "type": "string", "edit_type": "input", "component": "input", "required": true},
+        {"field": "award_year", "label": "获奖年份", "type": "number", "edit_type": "number", "component": "number", "required": true},
+        {"field": "summary", "label": "荣誉说明", "type": "text", "edit_type": "textarea", "component": "textarea", "required": false},
+        {"field": "image", "label": "荣誉图片", "type": "image", "edit_type": "image", "component": "upload", "required": false}
+      ]
+    }
+  }
+]

@@ -1,0 +1,46 @@
+<section
+  class="product-category-tree"
+  data-lethink-dynamic='{
+    "execute_path": "/cmsapi/api.api/execute",
+    "empty_text": "暂无产品分类",
+    "category": {
+      "path": "product_category_list",
+      "list_path": "data.list",
+      "field": "categories",
+      "parent_field": "parent_id",
+      "skip_list_load": true,
+      "embedded_items": true,
+      "detail_url": "/products/product-list",
+      "detail_id_key": "id",
+      "detail_id_param": "category_id",
+      "detail_link_field": "link",
+      "mapping": {
+        "id": "id",
+        "parent_id": "parent_id",
+        "name": "name",
+        "description": "description",
+        "image": "image",
+        "link": "link"
+      },
+      "default": {{$Var@categories}}
+    }
+  }'
+>
+  <div class="product-category-tree__list" data-component-items="categories">
+    <article class="product-category-tree__card" data-component-item>
+      <div class="product-category-tree__intro">
+        <h2>{{name}}</h2>
+        <p>{{description}}</p>
+      </div>
+
+      <img class="product-category-tree__image" src="{{image}}" alt="{{name}}">
+
+      <div class="product-category-tree__children" data-component-items="children">
+        <a class="product-category-tree__child" data-component-item href="{{link}}">
+          <span>{{name}}</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </article>
+  </div>
+</section>
