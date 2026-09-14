@@ -6,7 +6,7 @@
 
 | 技能 | 用途 |
 | --- | --- |
-| [create-lethink-dynamic-component](skills/create-lethink-dynamic-component/SKILL.md) | 基于静态 HTML 或业务需求创建动态组件，编写 `unit_json`、分类及筛选配置，并排查请求、字段绑定、内容入口和链接问题 |
+| [create-lethink-dynamic-component](skills/create-lethink-dynamic-component/SKILL.md) | 基于静态 HTML 或业务需求创建动态组件，输出 `unit_json` 和动态 HTML，支持产品/文章列表及配置式留资表单，并排查数据请求、字段绑定、验证码和管理入口问题 |
 
 ## 安装
 
@@ -46,7 +46,7 @@ npx skills@latest add git@github.com:alenschina/lethink-skills.git --skill creat
 2. 刷新并启用已安装的技能。ZCode 的入口为“设置 → 技能”；其他平台按各自的技能管理方式操作。
 3. 在对话中指定技能名称，并描述组件布局、业务字段和数据用途。
 
-如果已有原始静态 HTML markup，可以同时提供代码、附件或文件路径；技能会优先沿用现有结构完成动态化。未提供时，编程助手会询问是否有现成 markup；没有也可以根据需求及项目已有样式约定生成 HTML。关联的 CSS、已有 JS 和页面截图可一并作为输入提供。
+如果已有原始静态 HTML markup，可以同时提供代码、附件或文件路径；技能会优先沿用现有结构完成动态化。未提供时，编程助手会询问是否有现成 markup；没有也可以根据需求及项目已有样式约定生成 HTML。关联的 CSS、已有 JS 和页面截图可一并作为输入提供。表单还应说明输入字段、必填规则、验证码要求及提交数据用途；技能会先核对已有表单能力。
 
 默认输出为 `unit_json`、动态 HTML、后台配置和验证步骤。CSS、JS 原样沿用，不作为新增输出；技能会核对兼容性，发现需要改动时说明原因和范围。
 

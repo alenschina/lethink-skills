@@ -1,0 +1,83 @@
+[
+  {
+    "field": "component_meta",
+    "label": "组件元信息",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "runtime_type": "dynamic",
+      "component_type": "configured_lead_form",
+      "generate_menu": false,
+      "generates_content_menu": false
+    }
+  },
+  {
+    "field": "title",
+    "label": "标题",
+    "type": "string",
+    "edit_type": "input",
+    "can_edit": 1,
+    "show_in_panel": 1,
+    "show_in_right_panel": 1,
+    "default": "联系咨询"
+  },
+  {
+    "field": "submit_text",
+    "label": "提交按钮文案",
+    "type": "string",
+    "edit_type": "input",
+    "can_edit": 1,
+    "show_in_panel": 1,
+    "show_in_right_panel": 1,
+    "default": "提交"
+  },
+  {
+    "field": "lead_form",
+    "label": "服务端表单字段契约",
+    "type": "object",
+    "edit_type": "hidden",
+    "can_edit": 0,
+    "show_in_panel": 0,
+    "show_in_right_panel": 0,
+    "default": {
+      "phone_field": "phone",
+      "captcha": {
+        "type": "image"
+      },
+      "fields": [
+        {
+          "key": "name",
+          "label": "客户姓名",
+          "type": "text",
+          "required": true,
+          "max": 50
+        },
+        {
+          "key": "phone",
+          "label": "联系方式",
+          "type": "text",
+          "required": true,
+          "max": 20
+        },
+        {
+          "key": "email",
+          "label": "邮箱",
+          "type": "email",
+          "required": false,
+          "max": 100
+        },
+        {
+          "key": "remark",
+          "label": "客户备注",
+          "type": "textarea",
+          "required": true,
+          "max": 1000
+        }
+      ]
+    },
+    "remark": "字段与图片验证码策略由组件源配置决定；访客提交值不会保存为组件默认值。请同步修改 HTML 的 name、必填与长度设置。"
+  }
+]

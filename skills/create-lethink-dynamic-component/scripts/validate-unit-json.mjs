@@ -3,6 +3,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { inspectDynamicHtml } from "./validate-dynamic-html.mjs";
+import { inspectLeadForm } from "./validate-lead-form.mjs";
 
 const unitPath = process.argv[2];
 const htmlPath = process.argv[3];
@@ -67,20 +68,21 @@ for (const definition of definitions) {
 
 const componentMeta = fieldMap.get("component_meta")?.default;
 const dataSource = fieldMap.get("data_source")?.default;
+const isLeadForm = componentMeta?.component_type === "configured_lead_form" || fieldMap.has("lead_form");
 
 if (!isObject(componentMeta)) errors.push("缺少 component_meta.default");
 if (componentMeta?.runtime_type !== "dynamic") errors.push("component_meta.default.runtime_type 必须是 dynamic");
-if (!isObject(dataSource)) errors.push("缺少 data_source.default");
-if (dataSource?.mode !== "dynamic") errors.push("data_source.default.mode 必须是 dynamic");
+if (!isLeadForm && !isObject(dataSource)) errors.push("缺少 data_source.default");
+if (!isLeadForm && dataSource?.mode !== "dynamic") errors.push("data_source.default.mode 必须是 dynamic");
 
-const bindMode = dataSource?.bind_mode;
-if (!new Set(["create_package", "existing_api"]).has(bindMode)) {
+const bindMode = isLeadForm ? undefined : dataSource?.bind_mode;
+if (!isLeadForm && !new Set(["create_package", "existing_api"]).has(bindMode)) {
   errors.push("data_source.default.bind_mode 必须是 create_package 或 existing_api");
 }
 
-const itemFieldName = dataSource?.item_field || dataSource?.data_field || dataSource?.list_target;
+const itemFieldName = isLeadForm ? undefined : dataSource?.item_field || dataSource?.data_field || dataSource?.list_target;
 const itemField = itemFieldName ? fieldMap.get(itemFieldName) : undefined;
-if (!itemFieldName) errors.push("data_source.default 缺少 item_field");
+if (!isLeadForm && !itemFieldName) errors.push("data_source.default 缺少 item_field");
 if (itemFieldName && !itemField) errors.push(`找不到动态数据字段: ${itemFieldName}`);
 if (itemField && !Array.isArray(itemField.default)) errors.push(`${itemFieldName}.default 必须是数组`);
 
@@ -140,6 +142,8 @@ if (bindMode === "existing_api") {
   }
 }
 
+let formHtml;
+let htmlConfigs = [];
 if (htmlPath) {
   let html = "";
   try {
@@ -149,6 +153,8 @@ if (htmlPath) {
   }
 
   const inspection = inspectDynamicHtml(html, fieldMap);
+  formHtml = html;
+  htmlConfigs = inspection.configs;
   errors.push(...inspection.errors);
   warnings.push(...inspection.warnings);
   notes.push(...inspection.notes);
@@ -160,7 +166,7 @@ if (htmlPath) {
   )) {
     warnings.push(`HTML 动态指令中没有发现 field: ${itemFieldName}`);
   }
-  if (html && dataSource?.detail_link_field) {
+  if (html && !isLeadForm && dataSource?.detail_link_field) {
     const linkField = dataSource.detail_link_field;
     if (!html.includes(`href="{{${linkField}}}"`)) {
       warnings.push(`HTML 未使用运行时详情链接 href="{{${linkField}}}"`);
@@ -172,6 +178,13 @@ if (htmlPath) {
   if (/href=["'][^"']*\?[^"']*\{\{[^}]+\}\}/.test(html)) {
     warnings.push("HTML href 中仍有拼接式查询参数占位符；优先改用 detail_* 生成 link 字段");
   }
+}
+
+if (isLeadForm) {
+  const inspection = inspectLeadForm(fieldMap, formHtml, htmlConfigs);
+  errors.push(...inspection.errors);
+  warnings.push(...inspection.warnings);
+  notes.push(...inspection.notes);
 }
 
 for (const note of notes) console.log(`提示: ${note}`);

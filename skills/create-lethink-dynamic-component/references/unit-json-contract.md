@@ -4,6 +4,7 @@
 
 | 问题 | 选择 | 含义 |
 | --- | --- | --- |
+| 访客提交信息且进入现有留资管理吗？ | `configured_lead_form` | 使用 `lead_form` 和 `form`，直接提交现有控制器，不生成列表表和接口 |
 | 数据只服务于新组件或页面实例吗？ | `create_package` | 页面保存激活时生成实例级模型、表、接口和维护入口 |
 | 数据已经由产品、新闻、案例等内容中心维护吗？ | `existing_api` | 复用稳定接口和公共表；同站点消费者共享内容 |
 | 子项需要独立查询、权限、状态或复用吗？ | 真实父子模型 | 不应存进单条记录的 TEXT/JSON 字段 |
@@ -12,13 +13,15 @@
 
 ## 顶层结构
 
-`unit_json` 是字段定义数组。常见字段分三类：
+`unit_json` 是字段定义数组。列表组件的常见字段分三类：
 
 1. 普通组件配置，如区块标题。
 2. 隐藏的 `component_meta` 和 `data_source`。
 3. 动态数据字段，如 `items` 或 `categories`。
 
-最小动态元信息：
+配置式留资表单仅需普通展示配置、`component_meta` 和 `lead_form`，不要求上述列表字段；见 [表单创建说明](configured-lead-form.md)。
+
+列表最小动态元信息：
 
 ```json
 {
@@ -116,7 +119,7 @@
 
 业务分类名称不等于内容模块名。当前文章模型下，“新闻”和“公示”使用不同分类，但仍可共用 `content_module: news`、`content_schema_key: article`、`cat:news` 和文章维护入口。参考 [文章列表说明](article-list.md)，不要根据页面标题凭空创建 `notice` 模块或新表。
 
-## HTML 指令对齐
+## 列表 HTML 指令对齐
 
 HTML 根节点携带 `data-lethink-dynamic`，常用统一入口如下：
 

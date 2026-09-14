@@ -2,7 +2,9 @@
 
 先区分“完全没有请求”“请求失败”“成功但空列表”和“有数据但未渲染”，不要看到空白页面就修改接口或表。以下运行时细节应与用户部署版本核对。
 
-## 完全没有请求
+表单提交组件先阅读 [表单说明](configured-lead-form.md)：正常请求是 `CustomerLead/formCaptcha` 和 `CustomerLead/configuredSubmit`，没有 execute 请求不等于故障；使用现有留资管理，不适用下面的列表分类和内容菜单规则。
+
+## 列表完全没有请求
 
 1. 检查站点页面或预览 iframe 的 Network，按 `execute` 筛选并重新加载。标准路径可能适配成 `/cmsapi2`；组件库纯静态预览不一定请求接口。
 2. 读取 Elements 中最终的 `data-lethink-dynamic`，检查 JSON 语法。源码通过不代表页面实例合并后的配置通过。在正确 iframe 的 Console 中，选中组件根节点后可用 `JSON.parse($0.getAttribute('data-lethink-dynamic'))` 检查；若属性保留实体，还需按运行时的实体解码逻辑核对。
