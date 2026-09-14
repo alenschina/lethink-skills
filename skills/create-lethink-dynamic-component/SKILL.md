@@ -43,7 +43,7 @@ CSS 和已有 JS 属于输入及运行依赖，默认原样沿用。只在数据
 - `unit_json` 顶层是字段数组。
 - `component_meta.default.runtime_type` 必须是 `dynamic`。
 - 配置式留资表单使用 `component_type: configured_lead_form`、`lead_form.default.fields` 和 HTML 的 `form.schema`；不要求列表 `data_source/items`，不自动创建私有表或内容菜单。
-- 表单的 `fields[].key` 与 HTML 控件 `name` 对齐。服务端按源组件当前启用的 `lead_form` 校验；浏览器和页面实例的 schema 不能覆盖服务端策略。验证码独立提交，不混入业务字段。
+- 表单的 `fields[].key` 与 HTML 控件 `name` 对齐。服务端按源组件当前启用的 `lead_form` 校验；浏览器和页面实例的 schema 不能覆盖服务端策略。验证码独立提交，不混入业务字段。业务允许登录同款点选时优先核对并复用现有验证码能力；先确认发布页运行时和最终提交复核已支持，不能只改 JSON 类型。
 - `create_package` 的 `items.item_schema` 是以字段名为键的对象；`items.schema.fields` 才是数组。
 - `create_package` 的同一业务字段必须在样本、`item_schema`、`schema.fields` 和 `runtime_schema.allowed_fields` 中对齐。
 - `create_package` 默认使用 `seed_runtime_default: false`，避免把预览数据写成正式内容。

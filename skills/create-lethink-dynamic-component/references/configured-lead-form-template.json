@@ -45,7 +45,7 @@
     "default": {
       "phone_field": "phone",
       "captcha": {
-        "type": "image"
+        "type": "click"
       },
       "fields": [
         {
@@ -78,6 +78,6 @@
         }
       ]
     },
-    "remark": "字段与图片验证码策略由组件源配置决定；访客提交值不会保存为组件默认值。请同步修改 HTML 的 name、必填与长度设置。"
+    "remark": "字段与点选验证码策略由组件源配置决定；访客提交值不会保存为组件默认值。请同步修改 HTML 的 name、必填与长度设置。"
   }
 ]

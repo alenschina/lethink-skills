@@ -38,9 +38,10 @@ export function inspectLeadForm(fieldMap, html, configs = []) {
     const phone = fields.find(field => field?.key === schema.phone_field);
     if (phone && (!phone.max || phone.max > 20)) warnings.push("phone_field 对应字段建议设置 max: 20，当前留资电话列另有限长校验");
   }
-  if (schema.captcha !== undefined && (!isObject(schema.captcha) || ![undefined, "", "image"].includes(schema.captcha.type))) {
-    errors.push("lead_form.captcha 仅支持图片验证码对象；无需验证码时省略 captcha");
+  if (schema.captcha !== undefined && (!isObject(schema.captcha) || ![undefined, "", "click", "image"].includes(schema.captcha.type))) {
+    errors.push("lead_form.captcha 支持 click 点选或旧版 image 字符图片对象，需核对部署版本；无需验证码时省略 captcha");
   }
+  if (schema.captcha?.type === "image") warnings.push("image 属于旧字符图片验证码方案；新点选版本不支持，必须核对目标环境");
   if (schema.captcha?.type === "image" && keys.has("vcode")) warnings.push("vcode 是验证码输入，不应放入业务 fields；使用独立 captcha_id/captcha_code 提交");
   if (fieldMap.has("data_source") || fieldMap.has("items")) warnings.push("配置式留资表单不需要列表 data_source/items，请确认没有误用列表契约");
 
@@ -61,6 +62,6 @@ export function inspectLeadForm(fieldMap, html, configs = []) {
     }
     notes.push("表单 HTML 静态检查只匹配带引号的 name；实际表单归属、自定义选择器、必填控件和验证码钩子需在 DOM 验证");
   }
-  notes.push("表单直接 POST CustomerLead 控制器；不要求 data_source/items，也不代表验证码或真实入库已验证");
+  notes.push("表单直接 POST CustomerLead 控制器，点选预检走 Auth；不要求 data_source/items，静态通过不代表目标环境支持验证码或已真实入库");
   return { errors, warnings, notes };
 }

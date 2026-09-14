@@ -22,7 +22,7 @@ function run(change = () => {}, transform = value => value) {
   } finally { rmSync(folder, { recursive: true, force: true }); }
 }
 
-test("图片验证码表单无需列表数据源即可通过 CLI", () => {
+test("点选验证码表单无需列表数据源即可通过 CLI", () => {
   const result = run();
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /0 个警告/);
@@ -69,4 +69,11 @@ test("表单元信息配上列表 HTML 不算合法表单", () => {
   const result = run(undefined, () => '<section data-lethink-dynamic=\'{"list":{"path":"article_list"}}\'></section>');
   assert.equal(result.status, 1);
   assert.match(result.output, /缺少 form 分支/);
+});
+
+// 保留旧配置识别，但不能把静态通过当作新运行时兼容证明。
+test("旧字符图片验证码可被识别并提示部署版本差异", () => {
+  const result = run(schema => { schema.captcha.type = "image"; });
+  assert.equal(result.status, 0, result.output);
+  assert.match(result.output, /新点选版本不支持/);
 });

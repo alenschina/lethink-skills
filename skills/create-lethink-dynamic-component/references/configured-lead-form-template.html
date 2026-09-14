@@ -3,8 +3,6 @@
   "form": {
     "selector": ".form",
     "schema": {{$Var@lead_form}},
-    "captcha_image": "[data-lethink-captcha]",
-    "captcha_input": ".vcode-text",
     "status": "[data-lethink-form-status]",
     "success_text": "提交成功，我们会尽快与您联系"
   }
@@ -15,10 +13,6 @@
     <label>联系方式 <input type="tel" name="phone" required maxlength="20" autocomplete="tel"></label>
     <label>邮箱 <input type="email" name="email" maxlength="100" autocomplete="email"></label>
     <label>备注 <textarea name="remark" required maxlength="1000"></textarea></label>
-    <div>
-      <label>验证码 <input class="vcode-text" type="text" name="vcode" required maxlength="5" autocomplete="off" spellcheck="false"></label>
-      <img data-lethink-captcha src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="验证码加载中">
-    </div>
     <p data-lethink-form-status role="status" aria-live="polite">表单正在初始化…</p>
     <button type="submit" disabled>{{$Var@submit_text}}</button>
   </form>

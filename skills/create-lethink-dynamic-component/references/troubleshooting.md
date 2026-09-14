@@ -2,7 +2,7 @@
 
 先区分“完全没有请求”“请求失败”“成功但空列表”和“有数据但未渲染”，不要看到空白页面就修改接口或表。以下运行时细节应与用户部署版本核对。
 
-表单提交组件先阅读 [表单说明](configured-lead-form.md)：正常请求是 `CustomerLead/formCaptcha` 和 `CustomerLead/configuredSubmit`，没有 execute 请求不等于故障；使用现有留资管理，不适用下面的列表分类和内容菜单规则。
+表单提交组件先阅读 [表单说明](configured-lead-form.md)：使用登录同款点选验证码时，请求是 `auth/clickCaptcha`、`auth/checkClickCaptcha` 和 `CustomerLead/configuredSubmit`，没有 execute 请求不等于故障；使用现有留资管理，不适用下面的列表分类和内容菜单规则。
 
 ## 列表完全没有请求
 
