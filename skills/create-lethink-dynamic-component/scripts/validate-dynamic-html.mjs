@@ -18,7 +18,7 @@ function hasDefault(field) {
 }
 
 export function inspectDynamicHtml(html, fields) {
-  const errors = [], warnings = [], notes = [], configs = [];
+  const errors = [], warnings = [], notes = [], configs = [], boundFields = new Set();
   // 忽略注释及脚本/样式正文中的示例字符串；不充当通用 HTML/CMS 解析器。
   const markup = html.replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
@@ -109,6 +109,25 @@ export function inspectDynamicHtml(html, fields) {
         errors.push(`${label}.${section} 必须是对象`);
         continue;
       }
+      if (typeof part.field === "string") boundFields.add(part.field);
+      if (section === "detail") {
+        for (const key of ["sublists", "lists"]) {
+          if (part[key] === undefined) continue;
+          if (!Array.isArray(part[key])) {
+            errors.push(`${label}.detail.${key} 必须是数组`);
+            continue;
+          }
+          part[key].forEach((list, listIndex) => {
+            const listLabel = `${label}.detail.${key}[${listIndex}]`;
+            if (!isObject(list) || typeof list.field !== "string" || !list.field.trim()) {
+              errors.push(`${listLabel} 必须是包含非空 field 的对象`);
+              return;
+            }
+            boundFields.add(list.field);
+            if (key === "lists" && typeof list.first_field === "string") boundFields.add(list.first_field);
+          });
+        }
+      }
       if (part.params !== undefined && !isObject(part.params)) errors.push(`${label}.${section}.params 必须是对象`);
       if (section === "list" && part.filter_logic && part.params?.filter_logic && part.filter_logic !== part.params.filter_logic) {
         warnings.push(`${label}: 外层 filter_logic 会覆盖 params.filter_logic，请确认优先级符合业务要求`);
@@ -132,6 +151,7 @@ export function inspectDynamicHtml(html, fields) {
   notes.push("本次仅验证静态配置与支持的字段默认值，不代表 CMS 实例合并、运行时变量或真实接口验证通过");
   return {
     configs,
+    boundFields: [...boundFields],
     itemFields: [...markup.matchAll(/\bdata-component-items\s*=\s*(["'])(.*?)\1/gi)].map(match => decodeEntities(match[2])),
     errors: [...new Set(errors)], warnings: [...new Set(warnings)], notes: [...new Set(notes)]
   };

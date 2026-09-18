@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 const isObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const types = new Set(["text", "email", "select", "textarea", "consent"]);
 
-// 对照 ConfiguredLeadFormSchemaService 做静态校验，不模拟 CMS、DOM 或后端入库。
+// 检查已知表单配置形状；不同服务版本支持的校验能力不同，不模拟 CMS、DOM 或后端入库。
 export function inspectLeadForm(fieldMap, html, configs = []) {
   const errors = [], warnings = [], notes = [];
   const schema = fieldMap.get("lead_form")?.default;
@@ -42,6 +42,11 @@ export function inspectLeadForm(fieldMap, html, configs = []) {
     errors.push("lead_form.captcha 支持 click 点选或旧版 image 字符图片对象，需核对部署版本；无需验证码时省略 captcha");
   }
   if (schema.captcha?.type === "image") warnings.push("image 属于旧字符图片验证码方案；新点选版本不支持，必须核对目标环境");
+  if (schema.captcha?.type === "click") warnings.push("captcha.type: click 需要最终提交接口实际复核并消费验证码；静态校验不能证明目标服务已支持，基础版本可能忽略该配置");
+  if (schema.phone_field) warnings.push("phone_field 需要服务端实现电话列映射；基础版本可能仍将电话列写空");
+  if (fields.some(field => isObject(field) && field.type === "select" && field.options !== undefined)) {
+    warnings.push("select.options 需要目标服务端执行选项校验；基础版本可能忽略该配置");
+  }
   if (schema.captcha?.type === "image" && keys.has("vcode")) warnings.push("vcode 是验证码输入，不应放入业务 fields；使用独立 captcha_id/captcha_code 提交");
   if (fieldMap.has("data_source") || fieldMap.has("items")) warnings.push("配置式留资表单不需要列表 data_source/items，请确认没有误用列表契约");
 
@@ -51,7 +56,7 @@ export function inspectLeadForm(fieldMap, html, configs = []) {
     for (const config of forms) {
       if (!isObject(config.form) || !isObject(config.form.schema)) errors.push("HTML form.schema 必须是对象；对象模板外不要加双引号");
       else if (!isDeepStrictEqual(config.form.schema, schema)) errors.push("HTML form.schema 与 lead_form.default 不一致，请同步源契约与 HTML");
-      if (["list", "category", "detail", "fanout"].some(key => config[key] !== undefined)) warnings.push("form 分支优先初始化，同一动态指令中的列表等分支不会执行");
+      if (["list", "category", "detail", "fanout"].some(key => config[key] !== undefined)) warnings.push("支持公共 form 分支的版本可能优先处理表单；组件级方案取决于脚本接管方式，请核对混合指令的实际初始化");
     }
     const markup = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
     if (!/<form\b/i.test(markup)) errors.push("表单 HTML 缺少 form 元素");

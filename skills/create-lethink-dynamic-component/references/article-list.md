@@ -2,11 +2,9 @@
 
 当前项目中，新闻、公示属于同一文章模型，分类不同。使用 `existing_api` 复用 `article_list`，内部模块为 `news`、内容模型为 `article`、组件标签为 `cat:news`，常见维护入口为 `content/article` / `content/articleCategory`。字段和路由仍需从用户实际项目核对。
 
-## 从静态稿开始
+## 确认筛选语义
 
-用户已提供 HTML 或路径时先读取；未提供且没有说明不存在时，询问是否有原始静态 markup。CSS 和已有 JS 是输入，默认原样沿用；保留它们依赖的页面结构、类名和交互钩子，只改造 HTML 中的重复内容、字段占位符和动态指令。没有静态稿则按需求及项目已有样式约定生成 HTML，不补写 CSS、JS；不用反复索要。
-
-卡片里的展示日期、第三个“请选择”、七页页码等不能直接当成筛选定义。确认第三个控件代表日期还是业务分类，并让页数来自接口。不能仅凭画面推断数据表和共享规则。
+沿用技能主文档的原稿处理规则。静态稿中的日期控件和页码不定义业务规则：先确认控件代表年月日还是内容分类，页数从接口取得。
 
 ## 参考文件
 
@@ -35,7 +33,7 @@
 
 本参考场景要求分类、日期、关键词同时满足，因此使用 `params.filter_logic: and`；其他业务按需求决定。不要照抄首页推荐组件的 `is_recommend: 1`、`recommend_type: home`，也不要为了能取数就改为 OR。
 
-当前后端 `ApiService::shouldUseProfileNewsListRuntime` 对 `article_list` 的 OR 或明确推荐条件有专用分派，进入 `SiteProfileService::newsListData`；AND 且没有推荐条件时可继续走通用或绑定查询。此细节应随项目版本复核，不作为所有部署的固定规则。两条链路的过滤、字段及分页均要以实际接口为准。
+当前后端 `ApiService::shouldUseProfileNewsListRuntime` 在请求带正整数 `component_id`、`page_component_id`、`page_id` 或 `model_id` 时就会把 `article_list` 分派到 `SiteProfileService::newsListData`；显式 OR 或推荐条件也会进入该分支。因此 AND 且无推荐条件不保证走通用查询。`newsListData` 的筛选默认值为 AND；按目标版本和最终请求核对分派及过滤，组件上下文不是无关参数。
 
 当前浏览器控件契约：
 
@@ -63,5 +61,3 @@
 | 字段与指令静态校验 | JSON、支持的变量及字段引用可解析 |
 | 本地真实运行时与模拟响应 | 请求参数组装、模板渲染和交互行为 |
 | 真实 CMS 页面和接口 | 保存与实例覆盖、实际数据范围、分类筛选、分页及详情可达性 |
-
-公示组件实践已确认：缺逗号导致零请求；修正 JSON 并重新部署后恢复；空分类来自字段配置未配对。曾通过的本地模拟检查不应写成后续所有站点已验收。

@@ -25,7 +25,8 @@ function run(change = () => {}, transform = value => value) {
 test("点选验证码表单无需列表数据源即可通过 CLI", () => {
   const result = run();
   assert.equal(result.status, 0, result.output);
-  assert.match(result.output, /0 个警告/);
+  assert.match(result.output, /静态校验不能证明目标服务已支持/);
+  assert.match(result.output, /phone_field 需要服务端/);
   assert.doesNotMatch(result.output, /缺少 data_source|缺少 item_field|缺少 data-component-items/);
 });
 
@@ -40,7 +41,7 @@ test("电话映射不存在和发明验证码类型都必须被拒绝", () => {
   }
 });
 
-test("服务端不接受的重复字段、字段类型、选项结构及空契约不能通过", () => {
+test("无效字段、字段类型、选项结构及空契约不能通过", () => {
   for (const change of [
     schema => { schema.fields.push({ ...schema.fields[0] }); },
     schema => { schema.fields[1].type = "tel"; },
@@ -76,4 +77,13 @@ test("旧字符图片验证码可被识别并提示部署版本差异", () => {
   const result = run(schema => { schema.captcha.type = "image"; });
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /新点选版本不支持/);
+});
+
+test("选项白名单通过形状校验时仍需提示服务版本依赖", () => {
+  const result = run(schema => {
+    schema.fields[0].type = "select";
+    schema.fields[0].options = ["一类", "二类"];
+  });
+  assert.equal(result.status, 0, result.output);
+  assert.match(result.output, /select.options 需要目标服务端执行选项校验/);
 });

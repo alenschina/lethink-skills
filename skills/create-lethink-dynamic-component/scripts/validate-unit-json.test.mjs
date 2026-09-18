@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -224,3 +224,52 @@ for (const [name, json, html] of [
     if (name === "文章列表") assert.match(result.stderr, /默认值为空/);
   });
 }
+
+test("产品详情子列表和旁挂列表识别为有效字段绑定", () => {
+  const folder = mkdtempSync(join(tmpdir(), "lethink-detail-validator-"));
+  try {
+    const unit = join(folder, "unit.json"), html = join(folder, "detail.html");
+    writeFileSync(unit, JSON.stringify(definitions));
+    for (const detail of [
+      { path: "product_detail", sublists: [{ field: "items", path: "application_scenarios" }] },
+      { path: "product_detail", lists: [{ field: "items", path: "related_products" }] },
+      { path: "product_detail", lists: [{ field: "rest", first_field: "items", path: "related_products" }] }
+    ]) {
+      writeFileSync(html, markup(JSON.stringify({ detail })));
+      const result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.doesNotMatch(result.stderr, /没有发现 field/);
+    }
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});
+
+test("拒绝运行时无法遍历的详情子列表结构", () => {
+  for (const value of [{ field: "items" }, [null], [{}], [{ field: "" }]]) {
+    for (const key of ["sublists", "lists"]) {
+      const result = inspectDynamicHtml(markup(JSON.stringify({ detail: { path: "product_detail", [key]: value } })), fields);
+      assert.ok(result.errors.some(message => message.includes(`detail.${key}`)));
+    }
+  }
+});
+
+test("独立内容的错误字段类型返回可读错误而非脚本异常", () => {
+  const template = JSON.parse(readFileSync(new URL("../references/create-package-template.json", import.meta.url), "utf8"));
+  const folder = mkdtempSync(join(tmpdir(), "lethink-invalid-schema-"));
+  try {
+    for (const change of [
+      unit => { unit.find(field => field.field === "items").default = {}; },
+      ...[1, "title", {}, [1]].map(value => unit => {
+        unit.find(field => field.field === "data_source").default.runtime_schema.allowed_fields = value;
+      })
+    ]) {
+      const unit = structuredClone(template);
+      change(unit);
+      const path = join(folder, "unit.json");
+      writeFileSync(path, JSON.stringify(unit));
+      const result = spawnSync(process.execPath, [cli, path], { encoding: "utf8" });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /必须是数组|allowed_fields 必须/);
+      assert.doesNotMatch(result.stderr, /TypeError|at file:/);
+    }
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});

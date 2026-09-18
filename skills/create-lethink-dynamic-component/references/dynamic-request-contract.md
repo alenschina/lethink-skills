@@ -79,7 +79,7 @@
 
 1. 复制最终 `list.params`。
 2. 当前分类、关键词和年/月/日状态非空时，写入对应参数，覆盖同名固定值。
-3. 显式的外层 `filter_logic` 非空时覆盖 `params` 中的值；`newsListData` 路径还存在默认 OR 的兼容逻辑，应核对当前实现。
+3. 显式的外层 `filter_logic` 非空时覆盖 `params` 中的值；当前 `newsListData` 默认 AND；旧部署可能不同，应核对实际查询。
 4. 根据分页开关、当前页码、页大小写入 `page` 和 `limit`。
 5. 解析运行时 URL 参数，再由执行器组合 `path`、`site_id` 和查询参数。
 

@@ -58,7 +58,7 @@ if (!Array.isArray(unitJson)) {
 const definitions = Array.isArray(unitJson) ? unitJson : [];
 const fieldMap = new Map();
 for (const definition of definitions) {
-  if (!isObject(definition) || !definition.field) {
+  if (!isObject(definition) || typeof definition.field !== "string" || !definition.field.trim()) {
     errors.push("每个顶层字段定义都必须是带 field 的对象");
     continue;
   }
@@ -97,13 +97,17 @@ if (bindMode === "create_package" && itemField) {
     errors.push(`${itemFieldName}.schema.fields 必须是数组`);
   }
 
-  const sample = itemField.default?.find(isObject) || {};
+  const sample = (Array.isArray(itemField.default) ? itemField.default.find(isObject) : undefined) || {};
   const sampleKeys = new Set(Object.keys(sample).filter((key) => !systemFields.has(key)));
   if (!sampleKeys.size) warnings.push(`${itemFieldName}.default 没有可用于字段识别的业务样本`);
 
   const schemaKeys = new Set(Object.keys(itemField.item_schema || {}));
   const editorKeys = fieldKeysFromEditor(itemField);
-  const allowedKeys = new Set(dataSource.runtime_schema?.allowed_fields || []);
+  const allowedFields = dataSource.runtime_schema?.allowed_fields;
+  if (!Array.isArray(allowedFields) || allowedFields.some(key => typeof key !== "string" || !key.trim())) {
+    errors.push("runtime_schema.allowed_fields 必须是非空字段名组成的数组");
+  }
+  const allowedKeys = new Set(Array.isArray(allowedFields) ? allowedFields.filter(key => typeof key === "string") : []);
   checkEqualBusinessFields(`${itemFieldName}.item_schema`, sampleKeys, schemaKeys);
   checkEqualBusinessFields(`${itemFieldName}.schema.fields`, sampleKeys, editorKeys);
   checkEqualBusinessFields("runtime_schema.allowed_fields", sampleKeys, allowedKeys);
@@ -161,9 +165,7 @@ if (htmlPath) {
   if (html && itemFieldName && !inspection.itemFields.includes(itemFieldName)) {
     errors.push(`HTML 缺少 data-component-items="${itemFieldName}"`);
   }
-  if (html && itemFieldName && inspection.configs.length && !inspection.configs.some(config =>
-    [config.list, config.category, config.detail, config.fanout].some(part => part?.field === itemFieldName)
-  )) {
+  if (html && itemFieldName && inspection.configs.length && !inspection.boundFields.includes(itemFieldName)) {
     warnings.push(`HTML 动态指令中没有发现 field: ${itemFieldName}`);
   }
   if (html && !isLeadForm && dataSource?.detail_link_field) {
