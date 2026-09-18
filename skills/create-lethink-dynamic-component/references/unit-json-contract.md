@@ -119,6 +119,10 @@
 
 业务分类名称不等于内容模块名。当前文章模型下，“新闻”和“公示”使用不同分类，但仍可共用 `content_module: news`、`content_schema_key: article`、`cat:news` 和文章维护入口。参考 [文章列表说明](article-list.md)，不要根据页面标题凭空创建 `notice` 模块或新表。
 
+### 产品详情子列表
+
+属于当前产品的条目可由 `product_detail` 输出，并通过 HTML 的 `detail.sublists` 绑定。它与独立列表的 `list` 指令不同；后台 Tab、字段白名单、保存回显和接口输出也需对齐。选择共享原字段还是新增独立字段，以及旧配置兼容规则，见 [产品详情组件与后台数据接入](product-detail-content.md)。
+
 ## 列表 HTML 指令对齐
 
 HTML 根节点携带 `data-lethink-dynamic`，常用统一入口如下：
