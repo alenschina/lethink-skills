@@ -23,7 +23,7 @@ description: 为 Lethink CMS 创建或排查动态组件，默认交付 unit_jso
 | --- | --- |
 | 访客提交到现有留资管理 | `configured_lead_form`；读 [表单说明](references/configured-lead-form.md)。它不是 `data_source.bind_mode`，其他提交业务不能直接套用 |
 | 数据由产品等内容中心维护 | `existing_api`；复用稳定接口。产品拥有的数组仍属于产品数据，读 [产品详情与后台接入](references/product-detail-content.md) |
-| 需要按页面实例生成独立内容资源 | `create_package`；读 [unit_json 契约](references/unit-json-contract.md) 和 [独立内容模板](references/create-package-template.json) |
+| 需要按页面实例生成独立内容资源 | `create_package`；读 [unit_json 契约](references/unit-json-contract.md)、[独立内容模板](references/create-package-template.json)。激活时生成了什么、为何能在"网站栏目"下编辑，见 [create_package 激活链路](references/create-package-activation-chain.md) |
 | 子记录需要独立管理、查询或跨记录复用 | 先确认真实父子模型或已有内容关联，嵌套 JSON 不会自动成为子表 |
 
 Tab 同名不证明属于同一套数据，新组件编号也不证明需要复制产品字段。复用内容会影响同一归属记录下的全部消费者；修改公共接口或表结构还可能影响其他站点。
@@ -33,7 +33,7 @@ Tab 同名不证明属于同一套数据，新组件编号也不证明需要复�
 1. 搜索相邻实现和实际接口，确认参数、响应路径、站点过滤、保存回显与维护入口。不要复用页面实例生成的 `component_runtime_*` 接口，也不要把业务分类名当作独立模块名。
 2. 阅读 [unit_json 契约](references/unit-json-contract.md)，仅加载所需示例：产品分类用 [JSON](references/existing-api-product-category-template.json) / [HTML](references/product-category-template.html)；文章列表用 [说明](references/article-list.md)、[JSON](references/existing-api-article-list-template.json) / [HTML](references/article-list-template.html)；留资表单示例由表单说明引导。
 3. 同步编写 HTML 的 `data-lethink-dynamic`。浏览器读取最终 HTML 指令，不能只配置 `unit_json.data_source`。列表参数和页面实例覆盖顺序见 [动态请求契约](references/dynamic-request-contract.md)；表单按其直接 POST 契约接入。
-4. 在技能目录中运行静态校验，或将脚本路径换成安装目录的绝对路径：
+4. 在技能目录中运行静态校验，或将脚本路径换成安装目录的绝对路径（已内置事故硬规则检查：契约单引号/撇号、video 等字段名启发式、file 字段名、数组裸注入属性、learn-more 占位链接、detail 缺 scalars）：
    ```bash
    node scripts/validate-unit-json.mjs /absolute/path/component.unit.json /absolute/path/component.html
    ```
@@ -48,8 +48,19 @@ Tab 同名不证明属于同一套数据，新组件编号也不证明需要复�
 - CMS 字段变量、数据行占位符和页面实例值分开核对。链接优先使用接口有效值；需补生成时在 HTML 对应分支配置 `detail_*`，模板使用 `href="{{link}}"`。
 - 表单以服务端源组件契约为准，浏览器声明不能放宽校验；是否支持验证码、电话映射等能力必须核对目标版本，不能从字段名称或静态校验通过推断。
 
+以下硬规则全部来自真实生产/交付事故（出处与展开见 [事故硬规则](references/incident-hard-rules.md)），静态校验会拦截其中可检的部分：
+
+- 值载体：契约 JSON 内零单引号（`&#39;` 双向截断，684/752 生产事故）；样例文案撇号一律 U+2019；数组与自由文本值走 `script application/json` 载体、契约 `content` 键或 js 槽，不裸注入属性；组件 JS 零实体字面量（运行时拼接）。
+- 字段名先于 `edit_type` 被平台启发式劫持：video 词元强制上传控件（756），`link/url` 精确名进链接选择器，`edit_type=file` 字段名须含 `file_url/download_url/attachment`（734），`target` 为保留名。
+- `detail` 主体是标量必须声明 `detail.scalars`，否则子列表全空整组件被隐藏（738/774/789）；纯子列表组件例外。
+- 功能性元素（页签、提交钮）勿用 `learn-more/gdt-more` 类 `<a>` + 占位 href——空动作按钮扫描器会隐藏（747/742 终案都是改 button）。
+- 原稿保真三原则：DOM 结构逐字同构、CSS 逐字一致零追加、交互钩子沿用原稿选择器；能力缺口补运行时，不改标记。
+- 后端改动必须自包含（复用未随版提交的私有助手 = 选择性部署炸弹，647 生产 500）；公共包样式以生产实载 css 为准（多代并行）。
+
+验证与交付时另按 [验证与部署清单](references/verification-and-deployment.md) 核对：jsdom 差异与断言规则、「本地有效但生产没生效」四步分诊、挂载门控与回滚状态必报、纯增量 diff 与脚本写后即验。
+
 ## 交付
 
-交付完整 HTML、unit_json 和使用说明：组件标签、维护入口、数据作用域、部署前提、页面实例同步方式及沿用的依赖。仅在所选方案确有需要且已获授权时额外交付最小组件 JS。需用户填写的分类 ID、详情地址等配置单独列明，不用虚构 ID 或 0 代替。
+交付完整 HTML、unit_json 和使用说明：组件标签、维护入口、数据作用域、部署前提、页面实例同步方式及沿用的依赖。仅在所选方案确有需要且已获授权时额外交付最小组件 JS。需用户填写的分类 ID、详情地址等配置单独列明，不用虚构 ID 或 0 代替。收尾同时报告：本地验证挂载是保留还是已回滚（回滚即后台编辑位/Tab 消失，属挂载门控）、生产步骤按序（后端发版 → install.sql → 页面挂载/重存 → 重新发布）。
 
 分别报告静态校验、本地运行时/模拟请求、本地真实保存与接口、真实 CMS 页面验证。不能把源码存在写成部署能力，也不能把模拟结果写成正式站点已验收。无请求、空列表、菜单缺失、残留占位符等问题按 [排查指南](references/troubleshooting.md) 定位后再改动。

@@ -252,6 +252,77 @@ test("拒绝运行时无法遍历的详情子列表结构", () => {
   }
 });
 
+// —— 事故硬规则检查（incident-hard-rules.md）——
+const rulesFolder = () => mkdtempSync(join(tmpdir(), "lethink-incident-rules-"));
+
+test("契约含 &#39; 或 ASCII 单引号必须报错，默认文案撇号给出警告（684/752 截断事故）", () => {
+  const folder = rulesFolder();
+  try {
+    const unit = join(folder, "unit.json"), html = join(folder, "component.html");
+    writeFileSync(unit, JSON.stringify(definitions));
+    writeFileSync(html, markup('{"list":{"field":"items","label":"Astronergy&#39;s"}}'));
+    let result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /&#39;.*必须零单引号/);
+    writeFileSync(html, `<section data-lethink-dynamic="{&quot;list&quot;:{&quot;field&quot;:&quot;items&quot;,&quot;label&quot;:&quot;Astronergy's&quot;}}"><div data-component-items="items"></div></section>`);
+    result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /契约 JSON 内出现 ASCII 单引号/);
+    writeFileSync(html, `<section data-lethink-dynamic='{"list":{"field":"items","label":"{{$Var@label}}"}}'><div data-component-items="items"></div></section>`);
+    result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /label 默认文案含 ASCII 撇号/);
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});
+
+test("字段名撞视频启发式、file 字段缺资产词元、target 保留名必须报错（756/734/259 事故）", () => {
+  const folder = rulesFolder();
+  try {
+    const unit = join(folder, "unit.json"), html = join(folder, "component.html");
+    writeFileSync(html, markup(literal));
+    for (const field of [
+      { field: "video", edit_type: "input", default: "https://youtu.be/x" },
+      { field: "btn_file", edit_type: "file", default: "" },
+      { field: "target", edit_type: "input", default: "" }
+    ]) {
+      writeFileSync(unit, JSON.stringify([...definitions, field]));
+      const result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+      assert.equal(result.status, 1, `${field.field}: ${result.stdout}${result.stderr}`);
+      assert.match(result.stderr, new RegExp(field.field));
+    }
+    writeFileSync(unit, JSON.stringify([...definitions, { field: "youtube_url", edit_type: "input", default: "" }]));
+    assert.equal(spawnSync(process.execPath, [cli, unit, html]).status, 0);
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});
+
+test("数组值裸注入普通属性给出载体警告（680/778/756 事故）", () => {
+  const folder = rulesFolder();
+  try {
+    const unit = join(folder, "unit.json"), html = join(folder, "component.html");
+    writeFileSync(unit, JSON.stringify(definitions));
+    writeFileSync(html, markup(literal).replace("<section ", `<section data-sidebar-items='{{$Var@items}}' `));
+    const result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /data-sidebar-items.*script type="application\/json"|载体/);
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});
+
+test("learn-more/gdt-more 占位链接与 detail 缺 scalars 给出警告（747/742/738 事故）", () => {
+  const folder = rulesFolder();
+  try {
+    const unit = join(folder, "unit.json"), html = join(folder, "component.html");
+    writeFileSync(unit, JSON.stringify(definitions));
+    writeFileSync(html, markup(literal) + '<a class="learn-more gdt-more" href="##">更多</a>');
+    let result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /空动作按钮扫描器/);
+    writeFileSync(html, markup('{"detail":{"path":"article_detail","sublists":[{"field":"items","path":"points"}]}}'));
+    result = spawnSync(process.execPath, [cli, unit, html], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /detail\.scalars/);
+  } finally { rmSync(folder, { recursive: true, force: true }); }
+});
+
 test("独立内容的错误字段类型返回可读错误而非脚本异常", () => {
   const template = JSON.parse(readFileSync(new URL("../references/create-package-template.json", import.meta.url), "utf8"));
   const folder = mkdtempSync(join(tmpdir(), "lethink-invalid-schema-"));

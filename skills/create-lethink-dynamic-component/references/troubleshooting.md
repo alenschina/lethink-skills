@@ -132,3 +132,32 @@ JSON 漏逗号等语法错误会让 `parseDynamicConfig` 返回 null，运行时
 - 接口返回是否包含新字段。
 
 结构变更先在测试站点验证。若激活流程只负责首次创建而不负责迁移，需要后端迁移方案，不能靠刷新页面解决。
+
+契约改版还牵涉两类既有数据迁移，激活链不会自动完成（实测）：
+
+- **分类种子被短路**：内容表已有本站数据时，激活的播种守卫直接返回，连带跳过其后的分类表种子——分类表建了但是空的。
+- **旧行新分组列不回填**：如分组字段从内容列（如 `stage_title`）切到 `category_id`，升级只补列不赋值，旧行全 NULL；fanout 按 `category_id` 分组时所有行挤进同一个空标题组，页面只剩一个块。按「旧行分组值 ↔ 分类名」JOIN 回填即可恢复。
+
+## create_package 接口只返回部分行（归属 0 的行查不到）
+
+先建立判定模型：`create_package` 实例请求里携带的 `page_id`/`page_component_id` 坐标**只用于定位物理表，正常不做行级过滤**。行级归属过滤有三态：
+
+| 表形态 | 契约 `bind_mode` | 行为 |
+| --- | --- | --- |
+| 新激活的窄列表（无归属列） | 任意 | 表即隔离，无此问题 |
+| 旧版激活的宽列表（含归属列，默认 0） | `create_package` | 坐标只定位表，归属 0 的行仍可查到 |
+| 旧版激活的宽列表 | 非 `create_package`/空 | 坐标变成行级 where，归属 0 的行全部查不到 |
+
+当接口 total 少于表中有效行数、且缺的行归属为 0 时，查绑定行：
+
+```sql
+SELECT id, bind_mode, status FROM sys_component_page_binding
+WHERE page_id = ? AND page_component_id = ? AND component_id = ?
+  AND delete_time IS NULL;
+```
+
+`bind_mode` 不是 `create_package` 即命中第三态：`DynamicContentService::applyPageScopeFilters` 的独立建表豁免只读契约 `bind_mode`（无绑定表兜底），而 scope 判定有兜底——两者来源不对称，契约合并时 `bind_mode` 丢失即静默失效。特征是手工把行归属改成坐标值后该行立即可见、模型页新增的行（归属恒为 0）永远不可见。
+
+修复：`UPDATE sys_component_page_binding SET bind_mode = 'create_package' WHERE id = <id>;` 归属 0 的行立即全部恢复可见，无需逐行补归属。两个排雷点：不要往 `api_where` 占位符方向排查（runtime 实例路径不消费它）；若绑定行本就是 `create_package`，转查组件库源 unit_json 的 `data_source.bind_mode`（实例契约可能走了组件源链）。
+
+重新挂载注意：同页面同位置同组件重拖会命中已有绑定而复用旧模型旧表。要得到全新实例必须「删除组件 → 保存页面（清绑定，不能省）→ 重新拖入 → 保存」。

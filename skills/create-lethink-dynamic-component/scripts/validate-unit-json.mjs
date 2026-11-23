@@ -146,6 +146,32 @@ if (bindMode === "existing_api") {
   }
 }
 
+// —— 事故硬规则（references/incident-hard-rules.md）：字段名启发式与文案撇号 ——
+const videoLikeName = /(^|_)(videos?|mp4|webm|mov|m4v|ogg)(_|$)/i;
+const standaloneLinkNames = new Set(["link", "url", "href", "link_url", "jump_url", "more_link", "more_url", "button_link", "btn_link"]);
+const runtimeAssetName = /(image|cover|logo|icon|thumb|pic|picture|photo|banner|poster|avatar|file_url|download_url|attachment)/i;
+for (const definition of definitions) {
+  if (!isObject(definition) || typeof definition.field !== "string") continue;
+  const name = definition.field;
+  if (["component_meta", "data_source"].includes(name)) continue;
+  const editType = definition.edit_type;
+  if (name === "target") {
+    errors.push(`字段名 target 是平台保留名（打开方式语义），组件不可用；行内链接字段用 link`);
+  }
+  if (videoLikeName.test(name) && ["input", "textarea"].includes(editType)) {
+    errors.push(`字段 ${name} 名字命中视频启发式，面板会无视 edit_type=${editType} 强制渲染视频上传控件（756 事故）；纯文本字段改名（如 youtube_url）`);
+  }
+  if (standaloneLinkNames.has(name) && ["input", "textarea"].includes(editType)) {
+    notes.push(`字段 ${name} 精确名会渲染 StandaloneLinkBuilder 站内链接选择器；要普通文本输入需避开该名单`);
+  }
+  if (editType === "file" && !runtimeAssetName.test(name)) {
+    errors.push(`edit_type=file 的字段 ${name} 名字不含 file_url/download_url/attachment，后端不会把文件编号解析成签名 URL（734 btn_file 事故）`);
+  }
+  if (typeof definition.default === "string" && definition.default.includes("'")) {
+    warnings.push(`字段 ${name} 默认文案含 ASCII 撇号；注入单引号属性会截断（599/684/752 事故），文案撇号一律 U+2019 ’`);
+  }
+}
+
 let formHtml;
 let htmlConfigs = [];
 if (htmlPath) {
@@ -162,10 +188,16 @@ if (htmlPath) {
   errors.push(...inspection.errors);
   warnings.push(...inspection.warnings);
   notes.push(...inspection.notes);
-  if (html && itemFieldName && !inspection.itemFields.includes(itemFieldName)) {
+  // 纯标量详情组件（detail.scalars 绑定字段、无 sublists/lists 区域，如单图板块）没有行区域，
+  // item_field 只是 data_source 的形式占位（599/707/739 同形态），区域检查豁免。
+  const detailCfgForItems = inspection.configs.map((c) => c && c.detail).find(Boolean) || {};
+  const scalarOnlyDetail = Object.keys(detailCfgForItems.scalars || {}).length > 0
+    && !(detailCfgForItems.sublists || []).length
+    && !(detailCfgForItems.lists || []).length;
+  if (html && itemFieldName && !inspection.itemFields.includes(itemFieldName) && !scalarOnlyDetail) {
     errors.push(`HTML 缺少 data-component-items="${itemFieldName}"`);
   }
-  if (html && itemFieldName && inspection.configs.length && !inspection.boundFields.includes(itemFieldName)) {
+  if (html && itemFieldName && !scalarOnlyDetail && inspection.configs.length && !inspection.boundFields.includes(itemFieldName)) {
     warnings.push(`HTML 动态指令中没有发现 field: ${itemFieldName}`);
   }
   if (html && !isLeadForm && dataSource?.detail_link_field) {
@@ -179,6 +211,52 @@ if (htmlPath) {
   }
   if (/href=["'][^"']*\?[^"']*\{\{[^}]+\}\}/.test(html)) {
     warnings.push("HTML href 中仍有拼接式查询参数占位符；优先改用 detail_* 生成 link 字段");
+  }
+
+  // —— 事故硬规则（references/incident-hard-rules.md）：值载体、占位链接、scalars ——
+  // 契约 JSON 内零单引号：&#39; 会被保存链剥层/渲染链二次实体化两个方向截断（684/752 生产事故）。
+  for (const attribute of html.matchAll(/\bdata-lethink-dynamic\s*=\s*(['"])([\s\S]*?)\1/gi)) {
+    const raw = attribute[2];
+    const label = `data-lethink-dynamic（${raw.slice(0, 40).trim()}…）`;
+    if (/&#0?39;|&apos;/i.test(raw)) {
+      errors.push(`${label} 含 &#39;/&apos; 实体：保存链解码剥层、渲染链二次实体化都会截断属性，契约 JSON 内必须零单引号`);
+    }
+    if (raw.replace(/&#0?39;|&apos;/gi, "'").includes("'")) {
+      errors.push(`${label} 契约 JSON 内出现 ASCII 单引号：单引号属性会被提前闭合；文案撇号改 U+2019 或把可编辑文案移出契约`);
+    }
+  }
+  // 数组/对象值裸注入普通属性：值含引号即截断（680/778/756 家族），应走 script application/json 载体、契约 content 键或 js 槽。
+  const carrierWarned = new Set();
+  for (const attribute of html.matchAll(/\b([\w:.-]+)\s*=\s*(['"])([\s\S]*?)\2/g)) {
+    const attrName = attribute[1];
+    if (attrName === "data-lethink-dynamic") continue;
+    for (const token of attribute[3].matchAll(/\{\{\$Var@(\w+)\}\}/g)) {
+      const field = fieldMap.get(token[1]);
+      const value = field?.default;
+      if (value !== null && typeof value === "object" && !carrierWarned.has(`${attrName}:${token[1]}`)) {
+        carrierWarned.add(`${attrName}:${token[1]}`);
+        warnings.push(`属性 ${attrName} 直接注入数组/对象字段 ${token[1]}：值含引号即截断（680/778/756 事故）；改用 <script type="application/json"> 载体、契约 content 键或 js 槽 $Js@`);
+      }
+    }
+  }
+  // learn-more/gdt-more 的 <a> + 占位 href 会被 cleanupEmptyActionLinks 隐藏（747 页签误杀/742 提交钮事故）。
+  for (const tag of html.matchAll(/<a\b[^>]*>/gi)) {
+    const text = tag[0];
+    const classes = text.match(/\bclass\s*=\s*(["'])([^"']*)\1/i)?.[2] || "";
+    if (!/(^|\s)(learn-more|gdt-more)(\s|$)/.test(classes)) continue;
+    const href = text.match(/\bhref\s*=\s*(["'])([^"']*)\1/i)?.[2] ?? "";
+    if (href === "" || href === "#" || href === "##" || /^javascript:/i.test(href) || /^\{\{[^}]*\}\}$/.test(href)) {
+      warnings.push(`learn-more/gdt-more 的 <a> 占位链接（href="${href}"）会被空动作按钮扫描器隐藏：功能性元素改 <button>；确要空链自动隐藏则属预期`);
+    }
+  }
+  // detail 带 sublists 未声明 scalars：子列表全空时整组件被运行时隐藏（738/774/789 三连踩）。
+  for (const config of inspection.configs) {
+    const detail = isObject(config) ? config.detail : undefined;
+    if (!isObject(detail)) continue;
+    const sublistCount = (detail.sublists || []).length + (detail.lists || []).length;
+    if (sublistCount && !Object.keys(detail.scalars || {}).length) {
+      warnings.push("detail 带 sublists 未声明 scalars：子列表全空时整组件会被运行时隐藏且不渲染；主体有常驻标量必须声明 detail.scalars（纯子列表组件可忽略）");
+    }
   }
 }
 
